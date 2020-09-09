@@ -1,4 +1,4 @@
-module github.com/liuxp0827/xorm-go2sky-hook
+module github.com/qit-team/xorm-go2sky-hook
 
 go 1.14
 
