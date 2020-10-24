@@ -39,7 +39,13 @@ func (h *Go2SkyHook) BeforeProcess(c *contexts.ContextHook) (context.Context, er
 	if p, ok := c.Ctx.Value("peer").(string); ok {
 		peer = p
 	}
-	span, err := h.tracer.CreateExitSpan(c.Ctx, fmt.Sprintf("%v %v", c.SQL, c.Args), peer, func(header string) error {
+
+	// 敏感信息脱敏
+	args := fmt.Sprintf("%v", c.Args)
+	args = regPhone.ReplaceAllString(args, replacePhoneStr)
+	args = regIdNumber.ReplaceAllString(args, replaceIdNumberStr)
+
+	span, err := h.tracer.CreateExitSpan(c.Ctx, fmt.Sprintf("%v %v", c.SQL, args), peer, func(header string) error {
 		// 将本层的调用链信息写入http头部, 传入到下一层调用, 当前使用v3版本的协议
 		// https://github.com/apache/skywalking/blob/master/docs/en/protocols/Skywalking-Cross-Process-Propagation-Headers-Protocol-v3.md
 		return nil
@@ -48,11 +54,7 @@ func (h *Go2SkyHook) BeforeProcess(c *contexts.ContextHook) (context.Context, er
 		return nil, err
 	}
 	span.SetComponent(ComponentIDMysql)
-	// 敏感信息脱敏
-	args := fmt.Sprintf("%v", c.Args)
-	args = regPhone.ReplaceAllString(args, replacePhoneStr)
-	args = regIdNumber.ReplaceAllString(args, replaceIdNumberStr)
-	span.Tag("args", fmt.Sprintf("%v", c.Args))
+	span.Tag("args", args)
 	span.Tag("sql", fmt.Sprintf("%v %v", c.SQL, args))
 	span.SetSpanLayer(v3.SpanLayer_Database)
 	ctx := context.WithValue(c.Ctx, fmt.Sprintf("%v %v", c.SQL, c.Args), span)
