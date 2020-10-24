@@ -48,8 +48,12 @@ func (h *Go2SkyHook) BeforeProcess(c *contexts.ContextHook) (context.Context, er
 		return nil, err
 	}
 	span.SetComponent(ComponentIDMysql)
+	// 敏感信息脱敏
+	args := fmt.Sprintf("%v", c.Args)
+	args = regPhone.ReplaceAllString(args, replacePhoneStr)
+	args = regIdNumber.ReplaceAllString(args, replaceIdNumberStr)
 	span.Tag("args", fmt.Sprintf("%v", c.Args))
-	span.Tag("sql", fmt.Sprintf("%v %v", c.SQL, c.Args))
+	span.Tag("sql", fmt.Sprintf("%v %v", c.SQL, args))
 	span.SetSpanLayer(v3.SpanLayer_Database)
 	ctx := context.WithValue(c.Ctx, fmt.Sprintf("%v %v", c.SQL, c.Args), span)
 	return ctx, nil
